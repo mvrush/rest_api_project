@@ -8,6 +8,15 @@ const app = express(); // we create our express app by executing express as a fu
 //app.use(bodyParser.urlencoded()); // x-www-form-urlencoded <form>  (we don't use this method)
 app.use(bodyParser.json()); // application/json (we use this method because we're parsing JSON data)
 
+// The next middleware solves our CORS error problem. We use 'setHeader' to set a header for our response which json will send,
+// We set a couple headers that will be added to our response header.
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*'); // with this header we set a wildcard '*' to allow all domains and URL's to access our node.js server. Normally you might want to limit this although in the case of a REST API, you may want everyone to have access.
+    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, PATCH, DELETE'); // // this header sets what methods we allow, you can limit or allow as many as you like. 
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization') // these are headers our client may set on their request. You can use a wildcard '*' or limit them. Here we will allow 'Content-Type' and 'Authorization' headers.
+    next(); // this 'next()' allows our code to continue past this point.
+});
+
 app.use('/feed', feedRoutes); // we forward any request starting with '/feed' to the feedRoutes file which is located in /routes/feed.js
 
 app.listen(8080); // we usually use 3000 but we're using it elsewhere in this project.
