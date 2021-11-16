@@ -1,6 +1,6 @@
 const express = require('express'); // we import express by requiring the express module
 const bodyParser = require('body-parser'); // we import our 'body-parser' that we installed with npm install --save body-parser
- 
+const mongoose = require('mongoose'); // allows us to connect to MongoDB and use the functions to work with that database. 
 const feedRoutes = require('./routes/feed'); // we import our feed routes to app.js so we can register our routes.
 
 const app = express(); // we create our express app by executing express as a function express().
@@ -19,4 +19,10 @@ app.use((req, res, next) => {
 
 app.use('/feed', feedRoutes); // we forward any request starting with '/feed' to the feedRoutes file which is located in /routes/feed.js
 
-app.listen(8080); // we usually use 3000 but we're using it elsewhere in this project.
+// the next lines use Mongoose to connect to our database and start our server listening on port 8080.
+// It connects and if successful starts listening, if there's an error the .catch block logs the error.
+mongoose.connect('mongodb+srv://matt:L4sQRk6keymsprU6@cluster0.uxlfb.mongodb.net/messages?retryWrites=true&w=majority' // we use our database key and password and we create a new database called 'messages' (not 'shop' like before).
+).then(result => {
+    app.listen(8080); // we usually use 3000 but we're using it elsewhere in this project.
+})
+.catch(err => console.log("This error from mongoose.connect in app.js. ->", err));
