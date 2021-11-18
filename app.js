@@ -1,3 +1,4 @@
+const path = require('path'); // imports the 'path' module which will construct accurate paths to folders regardless of the OS (Windows, Linus, Apple)
 const express = require('express'); // we import express by requiring the express module
 const bodyParser = require('body-parser'); // we import our 'body-parser' that we installed with npm install --save body-parser
 const mongoose = require('mongoose'); // allows us to connect to MongoDB and use the functions to work with that database. 
@@ -7,6 +8,7 @@ const app = express(); // we create our express app by executing express as a fu
 
 //app.use(bodyParser.urlencoded()); // x-www-form-urlencoded <form>  (we don't use this method)
 app.use(bodyParser.json()); // application/json (we use this method because we're parsing JSON data)
+app.use('/images', express.static(path.join(__dirname, 'images'))); // Uses the 'static' method provided by Express and the 'path' module we imported above to create a path to our 'images' folder.
 
 // The next middleware solves our CORS error problem. We use 'setHeader' to set a header for our response which json will send,
 // We set a couple headers that will be added to our response header.
@@ -18,6 +20,13 @@ app.use((req, res, next) => {
 });
 
 app.use('/feed', feedRoutes); // we forward any request starting with '/feed' to the feedRoutes file which is located in /routes/feed.js
+
+app.use((error, req, res, next) => { // this middleware executes whenever an error is thrown and forwarded with 'next'.
+    console.log("This error was caught in our app.js error catching Middleware. It came from somewhere else. ->", error);
+    const status = error.statusCode || 500; // it pulls the statusCode from the error and assigns it to const status. If it can't find an error it assigns 500 which is a server error.
+    const message = error.message; // this property exists by default and holds the message you pass to the constructor of the error.
+    res.status(status).json({ message: message }); // we send a response with the 'status' and also the 'message' saved in json format.
+});
 
 // the next lines use Mongoose to connect to our database and start our server listening on port 8080.
 // It connects and if successful starts listening, if there's an error the .catch block logs the error.

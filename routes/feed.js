@@ -13,12 +13,14 @@ router.post('/post',
     [ // this object [] contains our server-side validation using express-validator and calling the 'body' const defined above to check the body.
         body('title')
         .trim()
-        .isLength( { min: 5 }),
+        .isLength( { min: 7 }),
         body('content')
         .trim()
         .isLength({ min: 5 })
     ],
     feedController.createPost
     ); // this is the route to our newsfeed posts. When a request reaches this it goes to the controllers/feed.js and executes the 'createPost' logic there.
+
+router.get('/post/:postId', feedController.getPost); // this route will fetch our post with the dynamic (as indicated by the colon (:)) ':postId'. It uses the FeedController getPost function.
 
 module.exports = router; // we export our router constant defined at the top which holds the 'express.Router()' function.
