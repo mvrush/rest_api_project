@@ -47,16 +47,22 @@ exports.createPost = (req, res, next) => {
     //         errors: errors.array()
     // });
     }
+    if (!req.file) { // checks the req for a file and if no (!) file is present it sets an error.
+        const error = new Error('No image provided. Please try again whilst providing an image. 🥺');
+        error.statusCode = 422; // on error replies with statusCode 422 to the browser console. 422=validation failed
+        throw error;
+    }
+    const imageUrl = req.file.path.replace("\\", "/"); // If an image was found in req.file then it stores the path to the file in the 'imageUrl' const. We had to use the 'replace()' function because it stores the filepath with a \\ which does not work in Windows. So we have to replace the '\\' with '/'.
     const title = req.body.title; // we pull this from the body of the req the user sent which is in the form of JSON data
     const content = req.body.content; // we pull this from the body of the req the user sent which is in the form of JSON data
     const post = new Post({ // we create a new post with our 'Post' model constructor and pass a JavaScript object {} to define what gets passed to the database. 
         title: title,
         content: content,
-        imageUrl: 'images/reilly_dummy.gif',
+        imageUrl: imageUrl,
         creator: { name: 'Big Willy'}
     });
     post.save().then(result => {
-        console.log("This is the result of our createPost 'post.save()'. ->", result);
+        console.log("This is the result of our createPost 'post.save()' in controllers/feed.js. ->", result);
         res.status(201).json({ // status 200 means success, status 201 means success AND we created a resource.
             message: 'Post created successfully!',
             post: result // this is the result we got back from post.save

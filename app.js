@@ -2,12 +2,40 @@ const path = require('path'); // imports the 'path' module which will construct 
 const express = require('express'); // we import express by requiring the express module
 const bodyParser = require('body-parser'); // we import our 'body-parser' that we installed with npm install --save body-parser
 const mongoose = require('mongoose'); // allows us to connect to MongoDB and use the functions to work with that database. 
+const multer = require('multer'); // imports Multer into our app.js. Installed with npm install --save multer.
+
 const feedRoutes = require('./routes/feed'); // we import our feed routes to app.js so we can register our routes.
 
 const app = express(); // we create our express app by executing express as a function express().
 
+const fileStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'images');
+    },
+    filename: (req, file, cb) => {
+        cb(null, new Date().toISOString().replace(/:/g,'_') + '-' + file.originalname); // we had to use replace() to replace all the colons in that Date()toISOString puts in there so it will work with Windows.
+    }
+});
+
+// the next block of code creates our 'fileFilter' const which defines the file types we will accept
+const fileFilter = (req, file, cb) => {
+    if (
+        file.mimetype === 'image/png'  ||
+        file.mimetype === 'image/jpg'  ||
+        file.mimetype === 'image/jpeg'  ||
+        file.mimetype === 'image/gif' 
+    ) {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+};
+
 //app.use(bodyParser.urlencoded()); // x-www-form-urlencoded <form>  (we don't use this method)
 app.use(bodyParser.json()); // application/json (we use this method because we're parsing JSON data)
+app.use(
+    multer({ storage: fileStorage, fileFilter: fileFilter }).single('image') // this registers multer and fills it with a JavaScript object {} that contains our const's we defined above.
+);
 app.use('/images', express.static(path.join(__dirname, 'images'))); // Uses the 'static' method provided by Express and the 'path' module we imported above to create a path to our 'images' folder.
 
 // The next middleware solves our CORS error problem. We use 'setHeader' to set a header for our response which json will send,
