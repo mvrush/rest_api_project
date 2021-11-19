@@ -1,3 +1,6 @@
+const fs = require('fs'); // brings in the filesystem module from Node.js so use the filesystem.
+const path = require('path'); // our Node.js path function that constructs paths to files that work for whatever OS is needing it (Win, Linux, MacOS).
+
 const { validationResult } = require('express-validator'); // This brings in 'express-validator' and assigns it to the 'validationResult' const.
 
 const Post = require('../models/post'); // We require our post.js from the models folder.
@@ -92,4 +95,56 @@ exports.getPost = (req, res, next) => {
             }
         next(err); // if there is an err statusCode it sends it to the 'next' err handler which is our catch-all middleware in app.js.
         });
-}
+};
+
+exports.updatePost = (req, res, next) => {
+    const postId = req.params.postId; // requests the 'postId' from the params.
+    const errors = validationResult(req); // looks at our validationResult in the request and looks for any errors.
+    if (!errors.isEmpty()) { // says "if isEmpty() has no (!) errors then there is an error". It's kind of backwards.
+        const error = new Error('Validation failed, entered data is incorrect.'); // we use the 'Error' constructor to create our error message.
+        error.statusCode = 422; // 422 means that validation failed.
+        throw error; // this 'throw' will exit the 'createPost' function and try to reach the next error handling function or error handling middleware provided in the express application ('app.js' I think). 
+    }
+    const title = req.body.title; // requests the title from the body.
+    const content = req. body.content; // requests the content from the body.
+    let imageUrl = req.body.image; // this sets up a variable so that if the image was not changed, it just pulls it's path from the body for the imageUrl.
+    if (req.file) {
+        imageUrl = req.file.path.replace("\\", "/"); // this says that if the req contains a file (req.file) then store the file.path as the imageUrl. We had to use the 'replace()' function because it stores the filepath with a \\ which does not work in Windows. So we have to replace the '\\' with '/'.
+    }
+    if (!imageUrl) { // says, if no (!) imageUrl is found then throw an error.
+        const error = new Error('No file picked.');
+        error.statusCode = 422; // status code 422=validation failure.
+        throw error; // this 'throw' will exit the 'createPost' function and try to reach the next error handling function or error handling middleware provided in the express application ('app.js' I think). 
+    }
+// after all the above validation checks, if everything is valid, we then update it in the database.
+    Post.findById(postId)
+    .then(post => {
+        if (!post) { // says if no (!) post, do the following lines.
+            const error = new Error('Could not find post.');
+            error.statusCode = 404; // 404 means 'not found'.
+            throw error; // we can use 'throw' here and not 'next' because the 'throw' will simply pass the error to our .catch block.
+        }
+        if (imageUrl !== post.imageUrl) { // says, if the imageUrl is not (!) the same as post.imageUrl then run clearImage which is defined below as a const.
+            clearImage(post.imageUrl);
+        }
+        post.title = title;
+        post.imageUrl = imageUrl;
+        post.content = content;
+        return post.save();
+    })
+    .then(result => {
+        res.status(200).json({ message: 'Post updated!', post: result }); // sends a response status 200=success along with some json that has a message and the result of our post.
+    })
+    .catch(err => {
+        if (!err.statusCode) { // checks for an error statusCode and if no (!) code then is sets a 500 server error.
+            err.statusCode = 500;
+        }
+    next(err); // if there is an err statusCode it sends it to the 'next' err handler which is our catch-all middleware in app.js.
+    });
+};
+
+const clearImage = filePath => {
+    filePath = path.join(__dirname, '..', filePath); // uses the 'path' constructor and finds the path to our image. '..' means up one folder level.
+    console.log(filePath);
+    fs.unlink(filePath, err => console.log("Err from 'clearImage' in the controllers/feed.js. (null means no error.) ->", err)); // uses the filesystem module (fs) to unlink() (which deletes the file) at the filePath
+};
