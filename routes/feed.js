@@ -32,7 +32,9 @@ router.put('/post/:postId',  // The 'put' method won't work with a browser form 
     .trim()
     .isLength({ min: 5 })
     ],
-    feedController.updatePost
+    feedController.updatePost // our associated controller action is 'feedController.updatePost' which means the updatePost function found in the feedController.
 );
+
+router.delete('/post/:postId', feedController.deletePost); // Route uses the 'delete' method to delete posts. Routes always have an associated controller action.
 
 module.exports = router; // we export our router constant defined at the top which holds the 'express.Router()' function.

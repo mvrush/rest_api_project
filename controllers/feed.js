@@ -10,7 +10,7 @@ exports.getPosts = (req, res, next) => {
     .then(posts => {
         res
         .status(200)
-        .json({message: 'Fetched posts successfully.', posts: posts}); // says '.then' send a response with (200) (200=success) along with a value for 'message' and the posts we found in the lines above as our 'posts' value.
+        .json({message: 'Fetched posts successfully.', posts: posts}); // says '.then' send a response with (200) (200=success) along with a value for 'message' and the posts we found in the lines above as our 'posts' value. The JSON data is shown in the Browser Console.
     })
     .catch(err => {
         if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
@@ -69,7 +69,7 @@ exports.createPost = (req, res, next) => {
         res.status(201).json({ // status 200 means success, status 201 means success AND we created a resource.
             message: 'Post created successfully!',
             post: result // this is the result we got back from post.save
-        });
+        }); // The JSON object is shown inside the Browser Console so you can check it there.
     }).catch(err => {
         if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
             err.statusCode = 500; // 500 means a server error occured.
@@ -87,7 +87,7 @@ exports.getPost = (req, res, next) => {
                 error.statusCode = 404; // 404 means 'not found'.
                 throw error; // we can use 'throw' here and not 'next' because the 'throw' will simply pass the error to our .catch block.
             }
-            res.status(200).json({ message: 'Post fetched.', post: post }); // If there is a post then we return a 200 status (success), put up the 'Post fetched.' message and return the post as json data.
+            res.status(200).json({ message: 'Post fetched.', post: post }); // If there is a post then we return a 200 status (success), put up the 'Post fetched.' message and return the post as json data which is shown in the Browser Console.
         })
         .catch(err => {
             if (!err.statusCode) { // checks for an error statusCode and if no (!) code then is sets a 500 server error.
@@ -133,7 +133,32 @@ exports.updatePost = (req, res, next) => {
         return post.save();
     })
     .then(result => {
-        res.status(200).json({ message: 'Post updated!', post: result }); // sends a response status 200=success along with some json that has a message and the result of our post.
+        res.status(200).json({ message: 'Post updated!', post: result }); // sends a response status 200=success along with some json that has a message and the result of our post which is shown in the Browser Console.
+    })
+    .catch(err => {
+        if (!err.statusCode) { // checks for an error statusCode and if no (!) code then is sets a 500 server error.
+            err.statusCode = 500;
+        }
+    next(err); // if there is an err statusCode it sends it to the 'next' err handler which is our catch-all middleware in app.js.
+    });
+};
+
+exports.deletePost = (req, res, next) => {
+    const postId = req.params.postId; // pulls our postId from params with a request.
+    Post.findById(postId)  // uses the 'findById' function on our Post database to pull out the postId.
+    .then(post => {
+        if (!post) { // says if no (!) post, do the following lines.
+            const error = new Error('Could not find post.');
+            error.statusCode = 404; // 404 means 'not found'.
+            throw error; // we can use 'throw' here and not 'next' because the 'throw' will simply pass the error to our .catch block.
+        }
+        // Check logged in user
+        clearImage(post.imageUrl); // this removes the image associated with the post using our 'clearImage' function.
+        return Post.findByIdAndRemove(postId);
+    })
+    .then(result => {
+        console.log("This is the result of our deletePost function. ->", result);
+        res.status(200).json({ message: 'Deleted post.' }); // 200=success and this JSON object can be seen in the Browser Console.
     })
     .catch(err => {
         if (!err.statusCode) { // checks for an error statusCode and if no (!) code then is sets a 500 server error.
@@ -145,6 +170,6 @@ exports.updatePost = (req, res, next) => {
 
 const clearImage = filePath => {
     filePath = path.join(__dirname, '..', filePath); // uses the 'path' constructor and finds the path to our image. '..' means up one folder level.
-    console.log(filePath);
+    console.log("This is the file that was deleted. ->", filePath);
     fs.unlink(filePath, err => console.log("Err from 'clearImage' in the controllers/feed.js. (null means no error.) ->", err)); // uses the filesystem module (fs) to unlink() (which deletes the file) at the filePath
 };
