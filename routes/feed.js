@@ -1,5 +1,5 @@
 const express = require('express'); // we import our express router by requiring express
-const { body } = require('express-validator'); // brings in 'express-validator' module and assigns it to the 'body' value to check the body. We could have said 'check' instead of body to check headers, query parameters etc.
+const { body } = require('express-validator'); // brings in 'express-validator' module for input validation and assigns it to the 'body' value to check the body. We could have said 'check' instead of body to check headers, query parameters etc.
 
 const feedController = require('../controllers/feed'); // this pulls in our controllers/feed.js file.
 

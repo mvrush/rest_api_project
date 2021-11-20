@@ -25,4 +25,4 @@ const postSchema = new Schema(
     { timestamps: true } // mongoose will add a timestamp every time a new object is added or updated in the database.
 );
 
-module.exports = mongoose.model('Post', postSchema); // we export a model based on the schema. We name our model 'Post' which creates a 'Post' database and we export our 'postSchema' defined above. This export is used in the conrtollers/feed.js
+module.exports = mongoose.model('Post', postSchema); // we export a model based on the schema. We name our model 'Post' which creates a 'Post' database (renamed 'posts' by MongoDB) and we export our 'postSchema' defined above. This export is used in the conrtollers/feed.js

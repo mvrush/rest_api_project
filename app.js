@@ -5,6 +5,7 @@ const mongoose = require('mongoose'); // allows us to connect to MongoDB and use
 const multer = require('multer'); // imports Multer into our app.js. Installed with npm install --save multer.
 
 const feedRoutes = require('./routes/feed'); // we import our feed routes to app.js so we can register our routes.
+const authRoutes = require('./routes/auth'); // we import our auth routes to app.js so we can register our routes.
 
 const app = express(); // we create our express app by executing express as a function express().
 
@@ -48,12 +49,14 @@ app.use((req, res, next) => {
 });
 
 app.use('/feed', feedRoutes); // we forward any request starting with '/feed' to the feedRoutes file which is located in /routes/feed.js
+app.use('/auth', authRoutes); // we forward any request starting with '/auth' to the authRoutes file which is located in /routes/auth.js
 
 app.use((error, req, res, next) => { // this middleware executes whenever an error is thrown and forwarded with 'next'.
     console.log("This error was caught in our app.js error catching Middleware. It came from somewhere else. ->", error);
     const status = error.statusCode || 500; // it pulls the statusCode from the error and assigns it to const status. If it can't find an error it assigns 500 which is a server error.
     const message = error.message; // this property exists by default and holds the message you pass to the constructor of the error.
-    res.status(status).json({ message: message }); // we send a response with the 'status' and also the 'message' saved in json format.
+    const data = error.data; // retrieves the error from the data property
+    res.status(status).json({ message: message, data: data }); // we send a response with the 'status' and also the 'message' saved in json format along with the 'data' of our original errors and passes them to the frontend where we view them in the Browser Console.
 });
 
 // the next lines use Mongoose to connect to our database and start our server listening on port 8080.
