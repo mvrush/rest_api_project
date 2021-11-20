@@ -6,11 +6,21 @@ const { validationResult } = require('express-validator'); // This brings in 'ex
 const Post = require('../models/post'); // We require our post.js from the models folder.
 
 exports.getPosts = (req, res, next) => {
-    Post.find() // uses 'find' on our 'Post' method which is our database. 'find' is a Mongoose function.
+    const currentPage = req.query.page || 1; // query paramenters are stored in the 'query' object so we pull 'page' from there. If there's nothing there we use '1' for page 1.
+    const perPage = 2;
+    let totalItems;
+    Post.find()
+    .countDocuments() // countDocuments counts the number of documents in our database.
+    .then(count => {
+        totalItems = count;
+        return Post.find() // uses 'find' on our 'Post' method which is our database. 'find' is a Mongoose function.
+            .skip((currentPage - 1) * perPage) // This skips the number of items on the current page - 1 multiplied by our perPage value.
+            .limit(perPage); // this limits the number of items to our perPage value.
+    })
     .then(posts => {
         res
         .status(200)
-        .json({message: 'Fetched posts successfully.', posts: posts}); // says '.then' send a response with (200) (200=success) along with a value for 'message' and the posts we found in the lines above as our 'posts' value. The JSON data is shown in the Browser Console.
+        .json({message: 'Fetched posts successfully.', posts: posts, totalItems: totalItems}); // says '.then' send a response with (200) (200=success) along with a value for 'message' and the posts we found in the lines above as our 'posts' value and the 'totalItems' value gets passed to the frontend. The JSON data is shown in the Browser Console.
     })
     .catch(err => {
         if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
