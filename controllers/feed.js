@@ -4,6 +4,7 @@ const path = require('path'); // our Node.js path function that constructs paths
 const { validationResult } = require('express-validator'); // This brings in 'express-validator' and assigns it to the 'validationResult' const.
 
 const Post = require('../models/post'); // We require our post.js from the models folder.
+const User = require('../models/user'); // Brings in our user.js from the models folder.
 
 exports.getPosts = (req, res, next) => {
     const currentPage = req.query.page || 1; // query paramenters are stored in the 'query' object so we pull 'page' from there. If there's nothing there we use '1' for page 1.
@@ -68,19 +69,30 @@ exports.createPost = (req, res, next) => {
     const imageUrl = req.file.path.replace("\\", "/"); // If an image was found in req.file then it stores the path to the file in the 'imageUrl' const. We had to use the 'replace()' function because it stores the filepath with a \\ which does not work in Windows. So we have to replace the '\\' with '/'.
     const title = req.body.title; // we pull this from the body of the req the user sent which is in the form of JSON data
     const content = req.body.content; // we pull this from the body of the req the user sent which is in the form of JSON data
+    let creator; // creates our 'creator' variable to filled below.
     const post = new Post({ // we create a new post with our 'Post' model constructor and pass a JavaScript object {} to define what gets passed to the database. 
         title: title,
         content: content,
         imageUrl: imageUrl,
-        creator: { name: 'Big Willy'}
+        creator: req.userId // every new post is assigned to a specific user ID. The req.userId comes from is-auth.js in the middleware folder and is pulled from our decodedToken there.
     });
     post.save().then(result => {
-        console.log("This is the result of our createPost 'post.save()' in controllers/feed.js. ->", result);
+            return User.findById(req.userId); // returns the User which is our req.userId from the is-auth.js in middleware folder.
+    })
+        .then(user => { // this user is the user that was found and is the currently logged in user.
+            creator = user; // fills our creator variabl with the 'user' that was found.
+            user.posts.push(post); // the push() the post const defined above to posts in the user database model.
+        console.log("This is the result of our createPost 'post.save()' in controllers/feed.js. ->", post);
+        return user.save(); // we return our user and save it.
+    })
+    .then(result => {
         res.status(201).json({ // status 200 means success, status 201 means success AND we created a resource.
             message: 'Post created successfully!',
-            post: result // this is the result we got back from post.save
+            post: post, // this is our post constant we defined a few lines above.
+            creator: { _id: creator._id, name: creator.name }
         }); // The JSON object is shown inside the Browser Console so you can check it there.
-    }).catch(err => {
+    }) 
+    .catch(err => {
         if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
             err.statusCode = 500; // 500 means a server error occured.
         }

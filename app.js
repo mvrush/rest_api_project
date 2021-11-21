@@ -44,7 +44,7 @@ app.use('/images', express.static(path.join(__dirname, 'images'))); // Uses the 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*'); // with this header we set a wildcard '*' to allow all domains and URL's to access our node.js server. Normally you might want to limit this although in the case of a REST API, you may want everyone to have access.
     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, PATCH, DELETE'); // // this header sets what methods we allow, you can limit or allow as many as you like. 
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization') // these are headers our client may set on their request. You can use a wildcard '*' or limit them. Here we will allow 'Content-Type' and 'Authorization' headers.
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization') // these are headers our client may set on their request. You can use a wildcard '*' or limit them. Here we will allow 'Content-Type' and 'Authorization' headers which are used by the frontend.
     next(); // this 'next()' allows our code to continue past this point.
 });
 

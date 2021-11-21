@@ -31,4 +31,6 @@ router.put('/signup', [
     authController.signup // calls the 'signup' function from our authController.
 );
 
+router.post('/login', authController.login); // this is our login route. It refences the 'login' function in the authController.
+
 module.exports = router; // we export our router constant defined at the top which holds the 'express.Router()' function.
