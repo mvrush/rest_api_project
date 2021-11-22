@@ -146,6 +146,11 @@ exports.updatePost = (req, res, next) => {
             error.statusCode = 404; // 404 means 'not found'.
             throw error; // we can use 'throw' here and not 'next' because the 'throw' will simply pass the error to our .catch block.
         }
+        if (post.creator.toString() !== req.userId) { // checks to see if our post.creator is not equal to (!==) our req.userId (which it finds in middleware/auth.js). If it's not, it throws the error lines immediately following.
+            const error = new Error('Not authorized!'); // creates a new error and assigns it to the error const.
+            error.statusCode = 403; // 403 is client side error and means Forbidden (not authorized).
+            throw error; // this 'throw' will exit the 'createPost' function and try to reach the next error handling function or error handling middleware provided in the express application ('app.js' I think).
+        }
         if (imageUrl !== post.imageUrl) { // says, if the imageUrl is not (!) the same as post.imageUrl then run clearImage which is defined below as a const.
             clearImage(post.imageUrl);
         }
@@ -174,12 +179,24 @@ exports.deletePost = (req, res, next) => {
             error.statusCode = 404; // 404 means 'not found'.
             throw error; // we can use 'throw' here and not 'next' because the 'throw' will simply pass the error to our .catch block.
         }
+        if (post.creator.toString() !== req.userId) { // checks to see if our post.creator is not equal to (!==) our req.userId (which it finds in middleware/auth.js). If it's not, it throws the error lines immediately following.
+            const error = new Error('Not authorized!'); // creates a new error and assigns it to the error const.
+            error.statusCode = 403; // 403 is client side error and means Forbidden (not authorized).
+            throw error; // this 'throw' will exit the 'createPost' function and try to reach the next error handling function or error handling middleware provided in the express application ('app.js' I think).
+        }
         // Check logged in user
         clearImage(post.imageUrl); // this removes the image associated with the post using our 'clearImage' function.
         return Post.findByIdAndRemove(postId);
     })
     .then(result => {
-        console.log("This is the result of our deletePost function. ->", result);
+        return User.findById(req.userId); // finds the userId after deleting a post.
+    })
+    .then(user => {
+        user.posts.pull(postId); // gets the postId of the deleted post
+        return user.save(); // saves it in the user collection
+    })
+    .then(result => {
+        console.log("This is the result of our req.userId from 'deletePost' function", result);
         res.status(200).json({ message: 'Deleted post.' }); // 200=success and this JSON object can be seen in the Browser Console.
     })
     .catch(err => {

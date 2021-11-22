@@ -74,3 +74,43 @@ exports.login = (req, res, next) => {
         next(err); // we can't use 'throw' here because we're in an asynchronous function. We have to use 'next()' to pass the err to our error handling middleware found in 'app.js'.
     });
 };
+
+exports.getUserStatus = (req, res, next) => {
+    User.findById(req.userId) // we can get the userId from the req object (references our middleware/is-auth.js file).
+    .then(user => {
+        if (!user) { // if no (!) user is found then throw an error.
+            const error = new Error('User not found.');
+            error.statusCode = 404; // 404 means 'Not Found'.
+            throw error; // we throw the error so that it throws it to the next .catch block.
+        }
+        res.status(200).json({ status: user.status }); // if a user was found we send a 200 (success) status and json data with the user.status
+    }).catch(err => {
+        if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
+            err.statusCode = 500; // 500 means a server error occured.
+        }
+        next(err); // we can't use 'throw' here because we're in an asynchronous function. We have to use 'next()' to pass the err to our error handling middleware found in 'app.js'.
+    });
+};
+
+exports.updateUserStatus = (req, res, next) => {
+    const newStatus = req.body.status;
+    User.findById(req.userId)
+    .then(user => {
+        if (!user) { // if no (!) user is found then throw an error.
+            const error = new Error('User not found.');
+            error.statusCode = 404; // 404 means 'Not Found'.
+            throw error; // we throw the error so that it throws it to the next .catch block.
+        }
+        user.status = newStatus;
+        return user.save(); // we return the promise that user.save() creates when it saves the user.
+    })
+    .then (result => {
+      res.status(200).json({ message: 'User updated.' }); // we return status 200 (success) along with the message.  
+    })
+    .catch( err => {
+        if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
+            err.statusCode = 500; // 500 means a server error occured.
+        }
+        next(err); // we can't use 'throw' here because we're in an asynchronous function. We have to use 'next()' to pass the err to our error handling middleware found in 'app.js'.
+    });
+};

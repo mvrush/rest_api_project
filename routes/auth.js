@@ -3,8 +3,9 @@ const { body } = require('express-validator'); // brings in 'express-validator' 
 
 const User = require('../models/user'); // we import our user model and assign it to const User.
 const authController = require('../controllers/auth'); // import our auth.js controller
+const isAuth = require('../middleware/is-auth'); // import our us-auth.js from our middleware folder.
 
-const router  = express.Router(); // we then create a router by calling the express.Router() function.
+const router  = express.Router(); // we then create a router by calling the express.Router() function. We need it for authorized routes.
 
 // here we add an array of validation-related middleware.
 // Uses the PUT method (could also use POST) but PUT can not only create but also overwrite a resource which POST cannot do.
@@ -32,5 +33,22 @@ router.put('/signup', [
 );
 
 router.post('/login', authController.login); // this is our login route. It refences the 'login' function in the authController.
+
+router.get('/status', isAuth, authController.getUserStatus); // this is our status route. It reuqires authorization which iw why we use 'isAuth' which we imported at the top of the page.
+
+// Imagine the router.patch block all as a single line like the router.get routes. We use the PATCH method which updates parts of an existing method.
+// It says this is the '/status' route, 'isAuth' checks to see if we've got an authorization token.
+// It then uses validation found inside the [] to check the body 'status' field to make sure it is not empty.
+router.patch(
+    '/status',
+     isAuth,
+        [
+            body('status')
+            .trim()
+            .not()
+            .isEmpty()
+        ],
+        authController.updateUserStatus
+        );
 
 module.exports = router; // we export our router constant defined at the top which holds the 'express.Router()' function.
