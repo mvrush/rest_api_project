@@ -6,46 +6,26 @@ const { validationResult } = require('express-validator'); // This brings in 'ex
 const Post = require('../models/post'); // We require our post.js from the models folder.
 const User = require('../models/user'); // Brings in our user.js from the models folder.
 
-exports.getPosts = (req, res, next) => {
+exports.getPosts = async (req, res, next) => {
     const currentPage = req.query.page || 1; // query paramenters are stored in the 'query' object so we pull 'page' from there. If there's nothing there we use '1' for page 1.
     const perPage = 2;
-    let totalItems;
-    Post.find()
-    .countDocuments() // countDocuments counts the number of documents in our database.
-    .then(count => {
-        totalItems = count;
-        return Post.find() // uses 'find' on our 'Post' method which is our database. 'find' is a Mongoose function.
+    try { // we now use 'try' to try running a block of code. If there's an error, it executes the 'catch' block.
+    const totalItems = await Post.find().countDocuments() // countDocuments counts the number of documents in our database.
+    const posts = await Post.find() // uses 'find' on our 'Post' method which is our database. 'find' is a Mongoose function.
             .skip((currentPage - 1) * perPage) // This skips the number of items on the current page - 1 multiplied by our perPage value.
             .limit(perPage); // this limits the number of items to our perPage value.
-    })
-    .then(posts => {
-        res
-        .status(200)
-        .json({message: 'Fetched posts successfully.', posts: posts, totalItems: totalItems}); // says '.then' send a response with (200) (200=success) along with a value for 'message' and the posts we found in the lines above as our 'posts' value and the 'totalItems' value gets passed to the frontend. The JSON data is shown in the Browser Console.
-    })
-    .catch(err => {
-        if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
+
+        res.status(200).json({ // says '.then' send a response with (200) (200=success) along with a value for 'message' and the posts we found in the lines above as our 'posts' value and the 'totalItems' value gets passed to the frontend. The JSON data is shown in the Browser Console.
+            message: 'Fetched posts successfully.',
+            posts: posts,
+            totalItems: totalItems
+        });
+    } catch (err) {
+            if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
             err.statusCode = 500; // 500 means a server error occured.
         }
         next(err); // we can't use 'throw' here because we're in an asynchronous function. We have to use 'next()' to pass the err to our error handlind middleware found in 'app.js'.
-    });
-
-/**** This was a dummy response we used when setting things up. */
-    // // this response is sent in json format. The json() function is built in and takes the JavaScript object {} and formats it as JSON with the correct headers etc.
-    // res.status(200).json({ // we have to be clear on our status codes so the client knows if there was an error or not. A 200 code means success.
-    //     posts: [
-    //         { 
-    //             _id: '1',
-    //             title: 'First Post',
-    //             content: 'This is the first post!',
-    //             imageUrl: 'images/mexican_austin.jpg',
-    //             creator: {
-    //                 name: 'Big Willy'
-    //             },
-    //             createdAt: new Date()
-    //         }
-    //     ]
-    // });
+    }
 };
 
 exports.createPost = (req, res, next) => {
