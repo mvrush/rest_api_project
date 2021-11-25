@@ -28,7 +28,7 @@ exports.getPosts = async (req, res, next) => {
     }
 };
 
-exports.createPost = (req, res, next) => {
+exports.createPost = async (req, res, next) => { // we added 'async' so we could use our 'await' code in the blocks below
     const errors = validationResult(req); // looks at our validationResult in the request and looks for any errors.
     if (!errors.isEmpty()) { // says "if isEmpty() has no (!) errors then there is an error". It's kind of backwards.
         const error = new Error('Validation failed, entered data is incorrect.'); // we use the 'Error' constructor to create our error message.
@@ -49,57 +49,83 @@ exports.createPost = (req, res, next) => {
     const imageUrl = req.file.path.replace("\\", "/"); // If an image was found in req.file then it stores the path to the file in the 'imageUrl' const. We had to use the 'replace()' function because it stores the filepath with a \\ which does not work in Windows. So we have to replace the '\\' with '/'.
     const title = req.body.title; // we pull this from the body of the req the user sent which is in the form of JSON data
     const content = req.body.content; // we pull this from the body of the req the user sent which is in the form of JSON data
-    let creator; // creates our 'creator' variable to filled below.
     const post = new Post({ // we create a new post with our 'Post' model constructor and pass a JavaScript object {} to define what gets passed to the database. 
         title: title,
         content: content,
         imageUrl: imageUrl,
         creator: req.userId // every new post is assigned to a specific user ID. The req.userId comes from is-auth.js in the middleware folder and is pulled from our decodedToken there.
     });
-    post.save().then(result => {
-            return User.findById(req.userId); // returns the User which is our req.userId from the is-auth.js in middleware folder.
-    })
-        .then(user => { // this user is the user that was found and is the currently logged in user.
-            creator = user; // fills our creator variabl with the 'user' that was found.
+/******************OLD BLOCK WE TRANSFORMED WITH ASYNC AWAIT **********************    
+//     post.save().then(result => {
+//             return User.findById(req.userId); // returns the User which is our req.userId from the is-auth.js in middleware folder.
+//     })
+//         .then(user => { // this user is the user that was found and is the currently logged in user.
+//             creator = user; // fills our creator variabl with the 'user' that was found.
+//             user.posts.push(post); // the push() the post const defined above to posts in the user database model.
+//         console.log("This is the result of our createPost 'post.save()' in controllers/feed.js. ->", post);
+//         return user.save(); // we return our user and save it.
+//     })
+//     .then(result => {
+//         res.status(201).json({ // status 200 means success, status 201 means success AND we created a resource.
+//             message: 'Post created successfully!',
+//             post: post, // this is our post constant we defined a few lines above.
+//             creator: { _id: creator._id, name: creator.name }
+//        }); // The JSON object is shown inside the Browser Console so you can check it there.
+//     })
+// } 
+//     catch (err) {
+//         if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
+//             err.statusCode = 500; // 500 means a server error occured.
+//         }
+//         next(err); // we can't use 'throw' here because we're in an asynchronous function. We have to use 'next()' to pass the err to our error handlind middleware found in 'app.js'.
+//     } ********************************* END OLD BLOCK ***********/
+////// THE NEXT BLOCK WORKS WITH THE ASYNC createPost FUNCTION
+try { // we now use 'try' to try running a block of code in a try/catch block. If there's an error, it executes the 'catch' block.
+await post.save();
+const user = await User.findById(req.userId); // returns the User which is our req.userId from the is-auth.js in middleware folder. Stores it in the 'user' const (which used to be in the '.then(user =>' block as shown above). this user is the user that was found and is the currently logged in user.
             user.posts.push(post); // the push() the post const defined above to posts in the user database model.
         console.log("This is the result of our createPost 'post.save()' in controllers/feed.js. ->", post);
-        return user.save(); // we return our user and save it.
-    })
-    .then(result => {
+    await user.save(); // we return our user and save it.
         res.status(201).json({ // status 200 means success, status 201 means success AND we created a resource.
             message: 'Post created successfully!',
             post: post, // this is our post constant we defined a few lines above.
-            creator: { _id: creator._id, name: creator.name }
+            creator: { _id: user._id, name: user.name }
         }); // The JSON object is shown inside the Browser Console so you can check it there.
-    }) 
-    .catch(err => {
-        if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
-            err.statusCode = 500; // 500 means a server error occured.
-        }
-        next(err); // we can't use 'throw' here because we're in an asynchronous function. We have to use 'next()' to pass the err to our error handlind middleware found in 'app.js'.
-    });
+}   catch(err) {
+    if (!err.statusCode) { // checks for a statusCode and if no (!) err.statusCode is found it executes the following.
+        err.statusCode = 500; // 500 means a server error occured.
+    }
+    next(err); // we can't use 'throw' here because we're in an asynchronous function. We have to use 'next()' to pass the err to our error handlind middleware found in 'app.js'.
+    } 
 };
 
-exports.getPost = (req, res, next) => {
+exports.getPost = async (req, res, next) => { // we added 'async' so we could use await in this function.
     const postId = req.params.postId; // pulls our 'postId' from the 'params' in the request.
-    Post.findById(postId) // we use our 'Post' model and the 'findById()' method provided by Mongoose to find our 'postId'.
-        .then(post => {
+    const post = await Post.findById(postId) // we use our 'Post' model and the 'findById()' method provided by Mongoose to find our 'postId' and we assign it to the 'post' const.
+       // .then(post => { // we removed this line when changing to async await.
+        try { // we wrap the following in a try/catch block and if the try fails, the catch catches it and throws a code.
             if (!post) { // says if no (!) post, do the following lines.
                 const error = new Error('Could not find post.');
                 error.statusCode = 404; // 404 means 'not found'.
                 throw error; // we can use 'throw' here and not 'next' because the 'throw' will simply pass the error to our .catch block.
             }
             res.status(200).json({ message: 'Post fetched.', post: post }); // If there is a post then we return a 200 status (success), put up the 'Post fetched.' message and return the post as json data which is shown in the Browser Console.
-        })
-        .catch(err => {
+     //   })   // we got rid of this because it went with our .then(post => 
+        } catch (err) {
             if (!err.statusCode) { // checks for an error statusCode and if no (!) code then is sets a 500 server error.
                 err.statusCode = 500;
             }
-        next(err); // if there is an err statusCode it sends it to the 'next' err handler which is our catch-all middleware in app.js.
-        });
+        next(err); // if there is an err statusCode it sends it to the 'next' err handler which is our catch-all middleware in app.js. 
+        }
+        // .catch(err => { // WE REMOVED THIS BLOCK and it was replaced with the try/catch block above with out async await code.
+        //     if (!err.statusCode) { // checks for an error statusCode and if no (!) code then is sets a 500 server error.
+        //         err.statusCode = 500;
+        //     }
+        // next(err); // if there is an err statusCode it sends it to the 'next' err handler which is our catch-all middleware in app.js.
+        // });
 };
 
-exports.updatePost = (req, res, next) => {
+exports.updatePost = async (req, res, next) => {  // we add 'async' to use our 'await' code below
     const postId = req.params.postId; // requests the 'postId' from the params.
     const errors = validationResult(req); // looks at our validationResult in the request and looks for any errors.
     if (!errors.isEmpty()) { // says "if isEmpty() has no (!) errors then there is an error". It's kind of backwards.
@@ -119,8 +145,9 @@ exports.updatePost = (req, res, next) => {
         throw error; // this 'throw' will exit the 'createPost' function and try to reach the next error handling function or error handling middleware provided in the express application ('app.js' I think). 
     }
 // after all the above validation checks, if everything is valid, we then update it in the database.
-    Post.findById(postId)
-    .then(post => {
+    try {  // we wrap the following await blocks in a try/catch. If there is an error, it catches and is returned.
+        const post = await Post.findById(postId) // we add await and then store our postId which we found with the findById() function as a 'post' const.
+    // .then(post => { // line removed when converting to async await.
         if (!post) { // says if no (!) post, do the following lines.
             const error = new Error('Could not find post.');
             error.statusCode = 404; // 404 means 'not found'.
@@ -137,23 +164,33 @@ exports.updatePost = (req, res, next) => {
         post.title = title;
         post.imageUrl = imageUrl;
         post.content = content;
-        return post.save();
-    })
-    .then(result => {
+      //  return post.save(); // converted this line to the next line
+        const result = await post.save(); // this save's our post, awaits a response and returns that to the 'result' const.
+  //  })  // removed because it worked with our .then(post => block above that we converted.
+  //  .then(result => { // removed because we converted .then blocks to await
         res.status(200).json({ message: 'Post updated!', post: result }); // sends a response status 200=success along with some json that has a message and the result of our post which is shown in the Browser Console.
-    })
-    .catch(err => {
+    } catch (err) {
         if (!err.statusCode) { // checks for an error statusCode and if no (!) code then is sets a 500 server error.
             err.statusCode = 500;
         }
     next(err); // if there is an err statusCode it sends it to the 'next' err handler which is our catch-all middleware in app.js.
-    });
+    }
+    // following code moved to the try/catch block above.
+    // .catch(err => {
+    //     if (!err.statusCode) { // checks for an error statusCode and if no (!) code then is sets a 500 server error.
+    //         err.statusCode = 500;
+    //     }
+    // next(err); // if there is an err statusCode it sends it to the 'next' err handler which is our catch-all middleware in app.js.
+    // });
 };
 
-exports.deletePost = (req, res, next) => {
+
+// I went ahead and converted 'deletePost' to an async function. To see what was changed see the w10 code.
+exports.deletePost = async (req, res, next) => {
     const postId = req.params.postId; // pulls our postId from params with a request.
-    Post.findById(postId)  // uses the 'findById' function on our Post database to pull out the postId.
-    .then(post => {
+    try { // we put a try/catch block in front of our await codes. It will try the code and if it fails the catch with catch the error.
+    const post = await Post.findById(postId)  // uses the 'findById' function on our Post database to pull out the postId.
+ 
         if (!post) { // says if no (!) post, do the following lines.
             const error = new Error('Could not find post.');
             error.statusCode = 404; // 404 means 'not found'.
@@ -166,25 +203,20 @@ exports.deletePost = (req, res, next) => {
         }
         // Check logged in user
         clearImage(post.imageUrl); // this removes the image associated with the post using our 'clearImage' function.
-        return Post.findByIdAndRemove(postId);
-    })
-    .then(result => {
-        return User.findById(req.userId); // finds the userId after deleting a post.
-    })
-    .then(user => {
+        await Post.findByIdAndRemove(postId);
+
+        const user = await User.findById(req.userId); // finds the userId after deleting a post.
         user.posts.pull(postId); // gets the postId of the deleted post
-        return user.save(); // saves it in the user collection
-    })
-    .then(result => {
+        await user.save(); // saves it in the user collection
+
         console.log("This is the result of our req.userId from 'deletePost' function", result);
         res.status(200).json({ message: 'Deleted post.' }); // 200=success and this JSON object can be seen in the Browser Console.
-    })
-    .catch(err => {
+    } catch (err) {
         if (!err.statusCode) { // checks for an error statusCode and if no (!) code then is sets a 500 server error.
             err.statusCode = 500;
         }
     next(err); // if there is an err statusCode it sends it to the 'next' err handler which is our catch-all middleware in app.js.
-    });
+    }
 };
 
 const clearImage = filePath => {
