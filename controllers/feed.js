@@ -12,6 +12,7 @@ exports.getPosts = async (req, res, next) => {
     try { // we now use 'try' to try running a block of code. If there's an error, it executes the 'catch' block.
     const totalItems = await Post.find().countDocuments() // countDocuments counts the number of documents in our database.
     const posts = await Post.find() // uses 'find' on our 'Post' method which is our database. 'find' is a Mongoose function.
+            .populate('creator') // populates the creator filled to show 'Posted by (creator)' on multi-post view.
             .skip((currentPage - 1) * perPage) // This skips the number of items on the current page - 1 multiplied by our perPage value.
             .limit(perPage); // this limits the number of items to our perPage value.
 
@@ -101,9 +102,11 @@ const user = await User.findById(req.userId); // returns the User which is our r
 
 exports.getPost = async (req, res, next) => { // we added 'async' so we could use await in this function.
     const postId = req.params.postId; // pulls our 'postId' from the 'params' in the request.
+    try { // we wrap the following in a try/catch block and if the try fails, the catch catches it and throws a code.
     const post = await Post.findById(postId) // we use our 'Post' model and the 'findById()' method provided by Mongoose to find our 'postId' and we assign it to the 'post' const.
-       // .then(post => { // we removed this line when changing to async await.
-        try { // we wrap the following in a try/catch block and if the try fails, the catch catches it and throws a code.
+        .populate('creator') // populates the creator filled to show 'Created by (creator)' on single post view.
+        // .then(post => { // we removed this line when changing to async await.
+    //    try { // we wrap the following in a try/catch block and if the try fails, the catch catches it and throws a code.
             if (!post) { // says if no (!) post, do the following lines.
                 const error = new Error('Could not find post.');
                 error.statusCode = 404; // 404 means 'not found'.
